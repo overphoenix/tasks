@@ -10,6 +10,7 @@ export * from "./isomorphic_task";
 export * from "./race_flow_task";
 export * from "./try_flow_task";
 export * from "./waterfall_flow_task";
+export * from "./advanced_task";
 export {
   ParallelFlowTask,
   SeriesFlowTask
