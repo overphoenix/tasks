@@ -1,8 +1,10 @@
-@ateos.task.task({
-    name: "4"
+import { BaseTask, Task } from "../../../lib";
+
+@Task({
+  name: "4"
 })
-export default class Task4 extends ateos.task.Task {
-    main() {
-        return 4;
-    }
+export default class Task4 extends BaseTask {
+  main() {
+    return 4;
+  }
 }

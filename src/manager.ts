@@ -8,10 +8,11 @@ import {
   isString,
   isObject,
   isPromise,
-  isUndefined
+  isUndefined,
+  omit
 } from "@recalibratedsystems/common";
 import * as upath from "upath";
-import * as fs from "fs";
+import { stat, readdir } from 'fs/promises';
 import typeOf from "@recalibratedsystems/common/typeof";
 import { identity, noop, truly } from "@recalibratedsystems/common";
 import { AsyncEventEmitter } from "@recalibratedsystems/common/async_event_emitter";
@@ -23,6 +24,16 @@ import { BaseTask } from "./base_task";
 import { getTaskMeta, MANAGER_SYMBOL, TaskInfo, TaskState } from "./common";
 import { customAlphabet } from "nanoid";
 import { isTask } from "./predicates";
+import { isRegExp } from "util/types";
+import { sync as resolve } from "resolve";
+
+const SUPPORTED_EXTS = [".js", ".mjs", ".ts"];
+
+interface LoadFromOptions {
+  domain?: string;
+  filter?: RegExp | ((fileName: string) => boolean);
+  [k: string]: any;
+}
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz", 16);
 
@@ -70,7 +81,7 @@ export class TaskManager extends AsyncEventEmitter {
       const taskInstance = new options.task();
 
       if (!isTask(taskInstance)) {
-        throw new NotValidException("The task class should be inherited from 'ateos.task.Task' class");
+        throw new NotValidException("The task class should be inherited from 'BaseTask' class");
       }
     } else if (!isFunction(options.task)) {
       throw new NotValidException("Task should be a class or a function");
@@ -130,89 +141,108 @@ export class TaskManager extends AsyncEventEmitter {
     return this.installTask(taskInfo);
   }
 
-  // /**
-  //    * Loads tasks from specified location(s).
-  //    * 
-  //    * @param {string|array} path  list of locations from which tasks be loaded
-  //    * @param {string} options.policy load policy:
-  //    * - throw (default): throw an exception if a task with the same name is already loaded
-  //    * - ignore: ignore tasks of the same name
-  //    * - replace: replace loaded task by newtask with same name
-  //    */
-  // async loadTasksFrom(path, { transpile = false, domain, ignore, ignoreExts = [".map"], ...taskOptions } = {}) {
-  //   let paths;
-  //   if (isString(path)) {
-  //     paths = util.arrify(path);
-  //   } else if (isArray(path)) {
-  //     paths = path;
-  //   } else {
-  //     throw new InvalidArgumentException("Invalid 'path' argument");
-  //   }
+  /**
+     * Loads tasks from specified location(s).
+     * 
+     * @param {string|array} path  list of locations from which tasks be loaded
+     * @param {string} options.policy load policy:
+     * - throw (default): throw an exception if a task with the same name is already loaded
+     * - ignore: ignore tasks of the same name
+     * - replace: replace loaded task by newtask with same name
+     */
+  async loadTasksFrom(path, options?: LoadFromOptions) {
+    let paths;
+    if (isString(path)) {
+      paths = [path];
+    } else if (isArray(path)) {
+      paths = path;
+    } else {
+      throw new InvalidArgumentException(`Invalid 'path' argument: ${typeOf(path)}`);
+    }
 
-  //   ignore = util.arrify(ignore);
+    for (const p of paths) {
+      let st;
+      try {
+        // Check for existing
+        st = await stat(p);
+      } catch (err) {
+        continue;
+      }
 
-  //   for (const p of paths) {
-  //     if (!(await fs.pathExists(p))) {
-  //       continue;
-  //     }
+      let files;
+      if (await st.isDirectory()) {
+        files = await readdir(p);
+      } else {
+        files = [p];
+      }
 
-  //     let files;
-  //     if (await fs.isDirectory(p)) {
-  //       files = await fs.readdir(p);
-  //     } else {
-  //       files = [p];
-  //     }
+      for (const f of files) {
+        if (!SUPPORTED_EXTS.includes(upath.extname(f))) {
+          continue;
+        }
+        if (options && options.filter) {
+          let success = true;
+          if (isRegExp(options.filter)) {
+            success = options.filter.test(f);
+          } else if (typeof options.filter === "function") {
+            success = options.filter(f);
+          }
+          if (!success) {
+            continue;
+          }
+        }
 
-  //     for (const f of files) {
-  //       if (ignoreExts.includes(upath.extname(f)) || ignore.includes(f)) {
-  //         continue;
-  //       }
-  //       let fullPath;
-  //       try {
-  //         fullPath = ateos.module.resolve(upath.join(p, f));
-  //       } catch (err) {
-  //         continue;
-  //       }
+        let fullPath;
+        try {
+          fullPath = resolve(upath.join(p, f));
+        } catch (err) {
+          console.log(err);
+          continue;
+        }
 
-  //       if (await fs.isDirectory(fullPath)) {
-  //         continue;
-  //       }
+        try {
+          // Check for existing
+          st = await stat(fullPath);
+          if (await st.isDirectory()) {
+            continue;
+          }
+        } catch (err) {
+          console.log(err);
+          continue;
+        }
 
-  //       let modExports;
+        let modExports;
 
-  //       try {
-  //         modExports = (transpile)
-  //           ? ateos.require(fullPath)
-  //           : require(fullPath);
-  //       } catch (err) {
-  //         console.error(err);
-  //         // ignore non javascript files
-  //         continue;
-  //       }
-  //       if (modExports.default) {
-  //         modExports = modExports.default;
-  //       }
+        try {
+          modExports = require(fullPath);
+        } catch (err) {
+          console.error(err);
+          // ignore non javascript files
+          continue;
+        }
+        if (modExports.default) {
+          modExports = modExports.default;
+        }
 
-  //       let tasks;
-  //       if (isClass(modExports)) {
-  //         tasks = [modExports];
-  //       } else if (isPlainObject(modExports)) {
-  //         tasks = [...Object.values(modExports)];
-  //       } else {
-  //         continue;
-  //       }
+        let tasks;
+        if (isClass(modExports)) {
+          tasks = [modExports];
+        } else if (isPlainObject(modExports)) {
+          tasks = [...Object.values(modExports)];
+        } else {
+          continue;
+        }
 
-  //       for (const task of tasks) {
-  //         // console.log(fullPath);
-  //         await this.addTask({
-  //           ...taskOptions,
-  //           task,
-  //           domain
-  //         });
-  //       }
-  //     }
-  //   }
-  // }
+        for (const task of tasks) {
+          const taskInfo: Partial<TaskInfo> = {
+            ...(options ? omit(options, ["filter"]) : {}),
+            task
+          };
+          await this.addTask(taskInfo);
+        }
+      }
+    }
+  }
 
   /**
      * Returns task info.

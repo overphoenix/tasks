@@ -15,11 +15,13 @@ import {
   AggregateException,
   ExistsException
 } from "@recalibratedsystems/common/error";
-import { IsomorphicTask, BaseTask, TaskManager, TaskObserver, SeriesFlowTask, ParallelFlowTask, WaterfallFlowTask, runSeries, runParallel, Task } from "../src";
-import { } from "../src/isomorphic_task";
-import { isTask, isTaskManager, isTaskObserver } from "../src/predicates";
-import TryFlowTask from "../src/try_flow_task";
-import RaceFlowTask from "../src/race_flow_task";
+import { IsomorphicTask, BaseTask, TaskManager, TaskObserver, SeriesFlowTask, ParallelFlowTask, WaterfallFlowTask, runSeries, runParallel, Task } from "../lib";
+import { } from "../lib/isomorphic_task";
+import { isTask, isTaskManager, isTaskObserver } from "../lib/predicates";
+import TryFlowTask from "../lib/try_flow_task";
+import RaceFlowTask from "../lib/race_flow_task";
+import * as upath from "upath";
+
 
 describe("task", () => {
   let manager;
@@ -1642,30 +1644,31 @@ describe("task", () => {
     });
   });
 
-  // describe("loadTasksFrom()", () => {
-  //   it("single location", async () => {
-  //     await manager.loadTasksFrom(ateos.path.join(__dirname, "fixtures"), { transpile: true });
+  describe("loadTasksFrom()", () => {
+    it("single location", async () => {
+      await manager.loadTasksFrom(upath.join(__dirname, "fixtures"));
 
-  //     assert.isTrue(manager.hasTask("1"));
-  //     assert.isTrue(manager.hasTask("2"));
-  //     assert.isTrue(manager.hasTask("3"));
-  //   });
+      expect(manager.hasTask("1")).toBeTruthy();
+      expect(manager.hasTask("2")).toBeTruthy();
+      expect(manager.hasTask("3")).toBeTruthy();
+    });
 
-  //   it("multiple location", async () => {
-  //     const basePath = ateos.path.join(__dirname, "fixtures");
-  //     await manager.loadTasksFrom([
-  //       basePath,
-  //       ateos.path.join(basePath, "other")
-  //     ], { transpile: true });
+    it("multiple location", async () => {
+      const basePath = upath.join(__dirname, "fixtures");
+      await manager.loadTasksFrom([
+        basePath,
+        upath.join(basePath, "other"),
+        upath.join(basePath, "multi"),
+      ]);
 
-  //     assert.isTrue(manager.hasTask("1"));
-  //     assert.isTrue(manager.hasTask("2"));
-  //     assert.isTrue(manager.hasTask("3"));
-  //     assert.isTrue(manager.hasTask("4"));
-  //     assert.isTrue(manager.hasTask("5"));
-  //     assert.isTrue(manager.hasTask("6"));
-  //   });
-  // });
+      expect(manager.hasTask("1")).toBeTruthy();
+      expect(manager.hasTask("2")).toBeTruthy();
+      expect(manager.hasTask("3")).toBeTruthy();
+      expect(manager.hasTask("4")).toBeTruthy();
+      expect(manager.hasTask("5")).toBeTruthy();
+      expect(manager.hasTask("6")).toBeTruthy();
+    });
+  });
 
 
 
