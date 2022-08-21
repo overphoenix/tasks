@@ -20,5 +20,8 @@
     "externalHelpers": false,
     "keepClassNames": true
   },
+  "module": {
+    "type": "commonjs"
+  },
   "isModule": true
 }
