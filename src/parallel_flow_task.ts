@@ -1,5 +1,6 @@
 import { noop, isPromise } from "@recalibratedsystems/common";
 import { FlowTask } from "./flow_task";
+import { TaskObserver } from "./task_observer";
 
 
 /**
@@ -11,16 +12,21 @@ export default class ParallelFlowTask extends FlowTask {
   async main() {
     const results = {};
     const promises: Promise<any>[] = [];
-    await this._iterate((observer) => {
+    await this._iterate((observer: TaskObserver): boolean => {
       let result = observer.result;
       if (!isPromise(result)) {
         result = Promise.resolve(result);
       }
 
-      result.then((result) => {
-        results[observer.taskName] = result;
+      result.then((result: any) => {
+        Object.defineProperty(results, observer.taskName, {
+          enumerable: true,
+          value: result
+        });
       }).catch(noop);
       promises.push(result);
+      
+      return false;
     });
 
     await Promise.all(promises);
@@ -31,7 +37,7 @@ export default class ParallelFlowTask extends FlowTask {
   /**
      * Cancel only cancelable tasks and await result of non-cancelable.
      */
-  cancel(defer) {
+  cancel(defer: any) {
     const promises: Promise<any>[] = [];
     for (const observer of this.observers) {
       if (observer.cancelable) {

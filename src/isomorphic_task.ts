@@ -1,5 +1,8 @@
-import { InvalidNumberOfArgumentsException, InvalidArgumentException } from "@recalibratedsystems/common/error";
-import typeOf from "@recalibratedsystems/common/typeof";
+import {
+  typeOf,
+  InvalidNumberOfArgumentsException,
+  InvalidArgumentException
+} from "@recalibratedsystems/common";
 import { BaseTask } from "./base_task";
 
 const ALLOWED_TYPES = ["Object", "global", "ateos", "undefined", "null"];
@@ -11,11 +14,11 @@ const ALLOWED_TYPES = ["Object", "global", "ateos", "undefined", "null"];
  * allows you to load parameters from configuration files or other sources and to use the latest features of the ESNext.
  */
 export class IsomorphicTask extends BaseTask {
-  async _run(...args) {
+  async _run(...args: any[]) {
     return this.main(this._validateArgs(args));
   }
 
-  _validateArgs(args) {
+  _validateArgs(args: any[]) {
     if (args.length > 1) {
       throw new InvalidNumberOfArgumentsException(`Isomorphic task takes nothing or only one argument of type Object. Received ${args.length} arguments`);
     }

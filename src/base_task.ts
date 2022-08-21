@@ -1,16 +1,22 @@
-import { ImmutableException, NotImplementedException } from "@recalibratedsystems/common/error";
+import { ImmutableException, NotImplementedException, NotValidException } from "@recalibratedsystems/common";
 import { MANAGER_SYMBOL, OBSERVER_SYMBOL } from "./common";
 import { TaskManager } from "./manager";
 import { TaskObserver } from "./task_observer";
 
 export class BaseTask {
+  [MANAGER_SYMBOL]: TaskManager | null;
+  [OBSERVER_SYMBOL]: TaskObserver | null;
+
   constructor() {
     this[MANAGER_SYMBOL] = null;
     this[OBSERVER_SYMBOL] = null;
   }
 
   get observer(): TaskObserver {
-    return this[OBSERVER_SYMBOL];
+    if (this[OBSERVER_SYMBOL] === null) {
+      throw new NotValidException("Task observer is not attached");
+    }
+    return this[OBSERVER_SYMBOL] as TaskObserver;
   }
 
   set observer(val) {
@@ -18,7 +24,10 @@ export class BaseTask {
   }
 
   get manager(): TaskManager {
-    return this[MANAGER_SYMBOL];
+    if (this[MANAGER_SYMBOL] === null) {
+      throw new NotValidException("Task manager is not attached");
+    }
+    return this[MANAGER_SYMBOL] as TaskManager;
   }
 
   set manager(val) {
@@ -30,7 +39,7 @@ export class BaseTask {
      * 
      * @return {any}
      */
-  main(...args) {
+  main(...args: any[]) {
     throw new NotImplementedException("Method main() is not implemented");
   }
 
@@ -48,18 +57,18 @@ export class BaseTask {
   /**
      * Suspends task. Should be implemented in derived class.
      */
-  suspend(...args) {
+  suspend(...args: any[]) {
   }
 
   /**
      * Resumes task. Should be implemented in derived class.
      */
-  resume(...args) {
+  resume(...args: any[]) {
   }
 
   /**
      * Cancels task. Should be implemented in derived class.
      */
-  cancel(...args) {
+  cancel(...args: any[]) {
   }
 }

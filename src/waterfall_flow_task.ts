@@ -7,7 +7,7 @@ import { FlowTask } from "./flow_task";
  * If all tasks has finished, result of the last task will be returned.
  */
 export class WaterfallFlowTask extends FlowTask {
-  async main(...args) {
+  async main(...args: any[]) {
     let result = args;
 
     for (const t of this.tasks) {

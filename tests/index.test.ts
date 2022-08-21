@@ -1,8 +1,13 @@
 import "reflect-metadata";
-import { omit, isString, isPromise, isNull, isNumber } from "@recalibratedsystems/common";
-import { delay, defer } from "@recalibratedsystems/common/promise";
-import typeOf from "@recalibratedsystems/common/typeof";
+import { } from "@recalibratedsystems/common";
 import {
+  omit,
+  isString,
+  isPromise,
+  isNull,
+  isNumber,
+  promise,
+  typeOf,
   Exception,
   InvalidNumberOfArgumentsException,
   NotExistsException,
@@ -14,8 +19,19 @@ import {
   NotAllowedException,
   AggregateException,
   ExistsException
-} from "@recalibratedsystems/common/error";
-import { IsomorphicTask, BaseTask, TaskManager, TaskObserver, SeriesFlowTask, ParallelFlowTask, WaterfallFlowTask, runSeries, runParallel, Task } from "../lib";
+} from "@recalibratedsystems/common";
+import {
+  IsomorphicTask,
+  BaseTask,
+  TaskManager,
+  TaskObserver,
+  SeriesFlowTask,
+  ParallelFlowTask,
+  WaterfallFlowTask,
+  runSeries,
+  runParallel,
+  Task
+} from "../lib";
 import { } from "../lib/isomorphic_task";
 import { isTask, isTaskManager, isTaskObserver } from "../lib/predicates";
 import TryFlowTask from "../lib/try_flow_task";
@@ -23,7 +39,7 @@ import RaceFlowTask from "../lib/race_flow_task";
 import * as upath from "upath";
 
 
-describe("task", () => {
+describe("tasks", () => {
   let manager;
 
   class SCTask extends BaseTask {
@@ -38,7 +54,7 @@ describe("task", () => {
     async _run(maxTimeout = 1000) {
       this._maxTicks = maxTimeout / 10;
       this.data = 0;
-      this._runDefer = defer();
+      this._runDefer = promise.defer();
       this.main();
       return this._runDefer.promise;
     }
@@ -46,7 +62,7 @@ describe("task", () => {
     async main() {
       this.reallySuspended = false;
       for (; ;) {
-        await delay(10);
+        await promise.delay(10);
         this.data++;
         if (this.data >= this._maxTicks) {
           this._runDefer.resolve(this.data);
@@ -61,7 +77,7 @@ describe("task", () => {
         }
         if (!isNull(this._cancelDefer)) {
           this._runDefer.resolve(this.data);
-          await delay(300);
+          await promise.delay(300);
           this._cancelDefer.resolve();
           return;
         }
@@ -73,7 +89,7 @@ describe("task", () => {
     }
 
     async resume(defer) {
-      delay(200).then(() => {
+      promise.delay(200).then(() => {
         this._suspendDefer = null;
         this.main();
         this.reallyResumed = true;
@@ -92,7 +108,7 @@ describe("task", () => {
     async main(value, timeout) {
       this.value++;
       if (isNumber(timeout)) {
-        await delay(timeout);
+        await promise.delay(timeout);
       }
       return value;
     }
@@ -106,8 +122,8 @@ describe("task", () => {
     const t = new BaseTask();
 
     expect(isTask(t)).toBeTruthy();
-    expect(t.manager).toBeNull();
-    expect(t.observer).toBeNull();
+    expect(() => t.manager).toThrow(NotValidException);
+    expect(() => t.observer).toThrow(NotValidException);
     expect(() => t.manager = undefined).toThrow(ImmutableException);
     expect(() => t.observer = undefined).toThrow(ImmutableException);
 
@@ -193,7 +209,12 @@ describe("task", () => {
     const taskA = await manager.getTaskInstance("task");
 
     for (const prop of props) {
-      expect(taskA[prop.name]).toStrictEqual(prop.expected);
+      if (prop.name === "manager") {
+        expect(taskA[prop.name]).toStrictEqual(prop.expected);
+      } else {
+        expect(() => taskA[prop.name]).toThrow(NotValidException);
+      }
+      
       expect(() => taskA[prop.name] = prop.createNew()).toThrow(ImmutableException);
     }
   });
@@ -225,7 +246,7 @@ describe("task", () => {
   it("observer should contain common task information", async () => {
     class TaskA extends BaseTask {
       main() {
-        return delay(10);
+        return promise.delay(10);
       }
     }
 
@@ -271,7 +292,7 @@ describe("task", () => {
   it("observer should contain correct error info for async task", async () => {
     class TaskA extends BaseTask {
       async main() {
-        await delay(10);
+        await promise.delay(10);
         throw new RuntimeException("sad");
       }
     }
@@ -289,7 +310,7 @@ describe("task", () => {
   it("run async task", async () => {
     class TaskA extends BaseTask {
       async main(version) {
-        await delay(10);
+        await promise.delay(10);
         return `RS ${version}`;
       }
     }
@@ -368,7 +389,7 @@ describe("task", () => {
   it("run async task once", async () => {
     class TaskA extends BaseTask {
       async main(version) {
-        await delay(10);
+        await promise.delay(10);
         return `rs ${version}`;
       }
     }
@@ -383,7 +404,7 @@ describe("task", () => {
   it("run deleted but still running task should have thrown", async () => {
     class TaskA extends BaseTask {
       async main(version) {
-        await delay(100);
+        await promise.delay(100);
         return `123 ${version}`;
       }
     }
@@ -619,7 +640,7 @@ describe("task", () => {
         if (check) {
           expect(counter).toEqual(inc);
         }
-        await delay(timeout);
+        await promise.delay(timeout);
         inc--;
         return inc;
       }
@@ -633,7 +654,7 @@ describe("task", () => {
         if (maxVal) {
           expect(this.inc).toBeLessThanOrEqual(maxVal);
         }
-        await delay(timeout);
+        await promise.delay(timeout);
         this.inc--;
         return this.inc;
       }
@@ -714,7 +735,7 @@ describe("task", () => {
     it("suspend/resume non suspendable task", async () => {
       await manager.addTask({ name: "a", task: SCTask });
       const observer = await manager.run("a");
-      await delay(200);
+      await promise.delay(200);
       await observer.suspend();
       expect(observer.suspended).toBeFalsy();
       expect(await observer.result).toEqual(100);
@@ -723,7 +744,7 @@ describe("task", () => {
     it("cancel non cancelable task", async () => {
       await manager.addTask({ name: "a", task: SCTask });
       const observer = await manager.run("a");
-      await delay(200);
+      await promise.delay(200);
       await expect(async () => observer.cancel()).rejects.toThrow(NotAllowedException);
       expect(await observer.result).toEqual(100);
       expect(observer.completed).toBeTruthy();
@@ -737,11 +758,11 @@ describe("task", () => {
         suspendable: true
       });
       const observer = await manager.run("a");
-      await delay(200);
+      await promise.delay(200);
       await observer.suspend();
       expect(observer.task.reallySuspended).toBeTruthy();
       expect(observer.suspended).toBeTruthy();
-      await delay(100);
+      await promise.delay(100);
       await observer.resume();
       expect(observer.task.reallyResumed).toBeTruthy();
       expect(observer.running).toBeTruthy();
@@ -755,7 +776,7 @@ describe("task", () => {
         cancelable: true
       });
       const observer = await manager.run("a");
-      await delay(200);
+      await promise.delay(200);
       await observer.cancel();
       expect(observer.cancelled).toBeTruthy();
       expect(await observer.result).not.toEqual(100);
@@ -766,21 +787,21 @@ describe("task", () => {
   describe("flows", () => {
     class TaskA extends BaseTask {
       async main() {
-        await delay(10);
+        await promise.delay(10);
         return 1;
       }
     }
 
     class TaskBadA extends BaseTask {
       async main() {
-        await delay(10);
+        await promise.delay(10);
         throw new Exception("some error");
       }
     }
 
     class TaskB extends BaseTask {
       async main(suffix) {
-        await delay(10);
+        await promise.delay(10);
         return `suffix-${suffix}`;
       }
     }
@@ -915,7 +936,7 @@ describe("task", () => {
         const observer = await manager.run("series", {
           tasks: ["a", "b"]
         });
-        await delay(100);
+        await promise.delay(100);
         expect(observer.cancelable).toBeTruthy();
 
         await observer.cancel();
@@ -930,7 +951,7 @@ describe("task", () => {
       it("cancel flow with first non-cancelable task should cancel flow", async () => {
         class TaskA extends BaseTask {
           async main() {
-            await delay(1000);
+            await promise.delay(1000);
             return 888;
           }
         }
@@ -956,10 +977,10 @@ describe("task", () => {
         const observer = await manager.run("series", {
           tasks: ["a", "b"]
         });
-        await delay(300);
+        await promise.delay(300);
         expect(observer.cancelable).toBeTruthy();
 
-        await delay(800);
+        await promise.delay(800);
 
         await observer.cancel();
 
@@ -1057,7 +1078,7 @@ describe("task", () => {
         });
         await expect(async () => observer.result).rejects.toThrow(RuntimeException);
 
-        await delay(300);
+        await promise.delay(300);
 
         expect(results).toEqual([666, 777]);
       });
@@ -1088,7 +1109,7 @@ describe("task", () => {
         const observer = await manager.run("parallel", {
           tasks: ["a", "b"]
         });
-        await delay(100);
+        await promise.delay(100);
         expect(observer.cancelable).toBeTruthy();
 
         await observer.cancel();
@@ -1103,7 +1124,7 @@ describe("task", () => {
       it("cancel flow with one non-cancelable and one cancelable", async () => {
         class TaskA extends BaseTask {
           async main() {
-            await delay(1000);
+            await promise.delay(1000);
             return 888;
           }
         }
@@ -1127,10 +1148,10 @@ describe("task", () => {
           tasks: ["a", "b"]
         });
 
-        await delay(300);
+        await promise.delay(300);
         expect(observer.cancelable).toBeTruthy();
 
-        await delay(1000);
+        await promise.delay(1000);
 
         await observer.cancel();
 
@@ -1197,7 +1218,7 @@ describe("task", () => {
 
       class TaskE extends BaseTask {
         async main(num1, num2) {
-          await delay(10);
+          await promise.delay(10);
           return num1 * num2;
         }
       }
@@ -1217,7 +1238,7 @@ describe("task", () => {
       it("managed+unmanaged tasks", async () => {
         class TaskF extends BaseTask {
           async main(sum) {
-            await delay(10);
+            await promise.delay(10);
             return `sum = ${sum}`;
           }
         }
@@ -1238,14 +1259,14 @@ describe("task", () => {
     describe("race", () => {
       class TaskD extends BaseTask {
         async main() {
-          await delay(500);
+          await promise.delay(500);
           return 3;
         }
       }
 
       class TaskE extends BaseTask {
         async main() {
-          await delay(300);
+          await promise.delay(300);
           return 5;
         }
       }
@@ -1264,7 +1285,7 @@ describe("task", () => {
       it("managed+unmanaged tasks", async () => {
         class TaskF extends BaseTask {
           async main() {
-            await delay(100);
+            await promise.delay(100);
             return 7;
           }
         }
@@ -1284,7 +1305,7 @@ describe("task", () => {
   it("runSeries() with functions", async () => {
 
     const task1 = async () => {
-      await delay(100);
+      await promise.delay(100);
       return 777;
     };
 
@@ -1303,7 +1324,7 @@ describe("task", () => {
   it("runParallel() with functions", async () => {
 
     const task1 = async () => {
-      await delay(100);
+      await promise.delay(100);
       return 777;
     };
 
@@ -1326,7 +1347,7 @@ describe("task", () => {
       let val;
       class TaskA extends BaseTask {
         async main() {
-          await delay(100);
+          await promise.delay(100);
           val = 1;
         }
       }
@@ -1335,7 +1356,7 @@ describe("task", () => {
       const observer = await manager.run("a");
 
       observer.finally(async () => {
-        await delay(100);
+        await promise.delay(100);
         val = 2;
       });
       await observer.result;
@@ -1367,13 +1388,13 @@ describe("task", () => {
       class TaskA extends BaseTask {
         async main() {
           data.push(1);
-          await delay(100);
+          await promise.delay(100);
           data.push(2);
           throw new RuntimeException("task error");
         }
 
         async undo() {
-          await delay(1000);
+          await promise.delay(1000);
           data.length = 0;
         }
       }
@@ -1398,7 +1419,7 @@ describe("task", () => {
         }
 
         async undo() {
-          await delay(1000);
+          await promise.delay(1000);
           data.length = 0;
         }
       }
@@ -1421,14 +1442,14 @@ describe("task", () => {
           message: "step1"
         });
 
-        await delay(1);
+        await promise.delay(1);
 
         this.manager.notify(this, "progress", {
           value: 0.5,
           message: "step2"
         });
 
-        await delay(1);
+        await promise.delay(1);
 
         this.manager.notify(this, "progress", {
           value: 1.0,
@@ -1444,14 +1465,14 @@ describe("task", () => {
           message: "bam1"
         });
 
-        await delay(1);
+        await promise.delay(1);
 
         this.manager.notify(this, "pro", {
           value: 0.6,
           message: "bam2"
         });
 
-        await delay(1);
+        await promise.delay(1);
 
         this.manager.notify(this, "progre", {
           value: 0.8,
@@ -1512,7 +1533,7 @@ describe("task", () => {
         manager.runAndWait("2")
       ]);
 
-      // await promise.delay(300);
+      // await promise.promise.delay(300);
       expect(i).toEqual(4);
     });
 

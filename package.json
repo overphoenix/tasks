@@ -1,9 +1,12 @@
 {
   "name": "@recalibratedsystems/tasks",
-  "version": "0.8.4",
+  "version": "0.8.5",
   "description": "Simple task manager",
   "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
   "scripts": {
+    "build": "swc ./src -d ./lib",
+    "build:types": "tsc -p tsconfig.types.json",
     "test": "jest"
   },
   "repository": {
@@ -20,16 +23,18 @@
     "reflect-metadata": "^0.1.13"
   },
   "devDependencies": {
+    "@swc/cli": "^0.1.57",
     "@swc/core": "^1.2.231",
     "@swc/jest": "^0.2.22",
     "@types/jest": "^28.1.6",
     "@types/node": "^18.7.3",
     "jest": "^28.1.3",
     "reflect-metadata": "^0.1.13",
-    "ts-jest": "^28.0.7"
+    "ts-jest": "^28.0.7",
+    "typescript": "^4.7.4"
   },
   "dependencies": {
-    "@recalibratedsystems/common": "^0.1.20",
+    "@recalibratedsystems/common": "^0.1.28",
     "nanoid": "^3.3.4",
     "resolve": "^2.0.0-next.4",
     "upath": "^2.0.1"

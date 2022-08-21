@@ -7,24 +7,26 @@ import { TaskObserver } from "./task_observer";
  * If all tasks has finished, the result will be an array of all tasks results.
  */
 export default class SeriesFlowTask extends FlowTask {
-  private shouldStop: boolean;
+  private shouldStop: boolean = false;
   private activeObserver?: TaskObserver;
 
   async main() {
     const results: any[] = [];
     this.shouldStop = false;
 
-    await this._iterate(async (observer) => {
+    await this._iterate(async (observer: TaskObserver): Promise<boolean> => {
       if (!this.shouldStop) {
         this.activeObserver = observer;
         results.push(await observer.result);
       }
+
+      return false;
     });
 
     return results;
   }
 
-  cancel(defer) {
+  cancel(defer: any) {
     this.shouldStop = true;
 
     if (this.activeObserver && this.activeObserver.cancelable) {

@@ -1,4 +1,6 @@
-.ateos
 src
 tests
-shanifile.js
+tsconfig.json
+tsconfig.types.json
+jest.config.js
+.swcrc

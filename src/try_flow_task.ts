@@ -1,5 +1,6 @@
-import { AggregateException } from "@recalibratedsystems/common/error";
+import { AggregateException } from "@recalibratedsystems/common";
 import { FlowTask } from "./flow_task";
+import { TaskObserver } from "./task_observer";
 
 /**
  * This flow runs each task in series but stops whenever any of the task were successful and the result of this task will be returned.
@@ -10,13 +11,15 @@ export default class TryFlowTask extends FlowTask {
     let result;
     const errors: any[] = [];
 
-    await this._iterate(async (observer) => {
+    await this._iterate(async (observer: TaskObserver): Promise<boolean> => {
       try {
         result = await observer.result;
         return true;
       } catch (err) {
         errors.push(err);
       }
+
+      return false;
     });
 
     if (this.tasks.length === errors.length) {

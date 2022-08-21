@@ -11,13 +11,13 @@ export enum TaskState {
   COMPLETED = 7
 }
 
-export type TaskRunner = (...args) => any;
+export type TaskRunner = (...args: any[]) => any;
 
 export interface TaskInfo {
   name: string;
   description?: string;
   domain?: string;
-  throttle: (...args) => any;
+  throttle: (...args: any[]) => any;
   suspendable: boolean;
   cancelable: boolean;
   concurrency: number;
@@ -26,7 +26,8 @@ export interface TaskInfo {
   Class?: any;
   zombi?: boolean;
   runner: TaskRunner;
-  runners: Set<TaskRunner>; 
+  runners: Set<TaskRunner>;
+  [k: string]: any;
 }
 
 export const MANAGER_SYMBOL = Symbol.for("rs:manager");
@@ -35,10 +36,10 @@ export const OBSERVER_SYMBOL = Symbol.for("rs:observer");
 // Decorators
 const TASK_ANNOTATION = "rs:task";
 
-const setTaskMeta = (target, info) => Reflect.defineMetadata(TASK_ANNOTATION, info, target);
-export const getTaskMeta = (target) => Reflect.getMetadata(TASK_ANNOTATION, target);
+const setTaskMeta = (target: any, info: any) => Reflect.defineMetadata(TASK_ANNOTATION, info, target);
+export const getTaskMeta = (target: any) => Reflect.getMetadata(TASK_ANNOTATION, target);
 
-export const Task = (taskInfo = {}) => (target) => {
+export const Task = (taskInfo = {}) => (target: any) => {
   const info = getTaskMeta(target);
   if (isUndefined(info)) {
     setTaskMeta(target, taskInfo);

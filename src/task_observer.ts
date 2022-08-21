@@ -1,6 +1,11 @@
-import { isNumber, isFunction, isPromise } from "@recalibratedsystems/common";
-import { NotAllowedException } from "@recalibratedsystems/common/error";
-import { defer } from "@recalibratedsystems/common/promise";
+import {
+  isNumber,
+  isFunction,
+  isPromise,
+  promise,
+  NotAllowedException
+} from "@recalibratedsystems/common";
+import { BaseTask } from "./base_task";
 import { OBSERVER_SYMBOL, TaskInfo, TaskState } from "./common";
 
 export class TaskObserver {
@@ -8,7 +13,7 @@ export class TaskObserver {
   public result: any;
   public error: any;
 
-  constructor(public task, public taskInfo: TaskInfo) {
+  constructor(public task: BaseTask, public taskInfo: TaskInfo) {
     this.task[OBSERVER_SYMBOL] = this;
   }
 
@@ -29,7 +34,7 @@ export class TaskObserver {
     }
     if (this.state === TaskState.RUNNING) {
       this.state = TaskState.CANCELLING;
-      const d = defer();
+      const d = promise.defer();
       await this.task.cancel(d);
       await d.promise;
     }
@@ -41,14 +46,14 @@ export class TaskObserver {
      * @param {number} ms If provided, the task will be resumed after the specified timeout.
      * @param {function} callback Is used only in conjunction with the 'ms' parameter, otherwise will be ignored.
      */
-  async suspend(ms, callback) {
+  async suspend(ms: number, callback: (() => any)) {
     if (this.suspendable) {
       switch (this.state) {
         case TaskState.CANCELLED:
         case TaskState.COMPLETED:
           return isNumber(ms) && isFunction(callback) && callback();
       }
-      const d = defer();
+      const d = promise.defer();
       await this.task.suspend(d);
       await d.promise;
       this.state = TaskState.SUSPENDED;
@@ -68,19 +73,19 @@ export class TaskObserver {
      */
   async resume() {
     if (this.state === TaskState.SUSPENDED) {
-      const d = defer();
+      const d = promise.defer();
       await this.task.resume(d);
       await d.promise;
       this.state = TaskState.RUNNING;
     }
   }
 
-  async finally(fn) {
+  async finally(fn: (() => any)) {
     if (isPromise(this.result)) {
-      this.result = this.result.then(async (result) => {
+      this.result = this.result.then(async (result: any) => {
         await fn();
         return result;
-      }).catch(async (err) => {
+      }).catch(async (err: any) => {
         await fn();
         throw err;
       });

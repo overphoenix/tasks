@@ -1,11 +1,19 @@
-import { arrify, isExist, isFunction, isString, isObject } from "@recalibratedsystems/common";
-import typeOf from "@recalibratedsystems/common/typeof";
-import { NotValidException, NotAllowedException, NotExistsException } from "@recalibratedsystems/common/error";
+import {
+  arrify,
+  isExist,
+  isFunction,
+  isString,
+  isObject,
+  typeOf,
+  NotValidException, NotAllowedException, NotExistsException
+} from "@recalibratedsystems/common";
+import {  } from "@recalibratedsystems/common";
+import { TaskManager } from "./manager";
 import { IsomorphicTask } from "./isomorphic_task";
 import { TaskObserver } from "./task_observer";
 
 
-const normalizeAndCheck = (manager, tasks) => {
+const normalizeAndCheck = (manager: TaskManager, tasks: any[]) => {
   const result: any[] = [];
   for (const t of tasks) {
     let item;
@@ -44,18 +52,17 @@ export class FlowTask extends IsomorphicTask {
   private args: any[] = [];
   public observers: TaskObserver[] = [];
 
-  _run(...args) {
+  _run(...args: any[]) {
     const taskData = this._validateArgs(args);
 
     this.tasks = normalizeAndCheck(this.manager, taskData.tasks);
     this.args = arrify(taskData.args);
     this.observers = [];
-    // this.options = options;
 
     return this.main(...this.args);
   }
 
-  async _iterate(handler) {
+  async _iterate(handler: ((o: TaskObserver) => boolean | Promise<boolean>)) {
     for (const t of this.tasks) {
       const args = isExist(t.args)
         ? arrify(t.args)
@@ -69,7 +76,7 @@ export class FlowTask extends IsomorphicTask {
     }
   }
 
-  _runTask(task, args) {
+  _runTask(task: any, args: any[]) {
     if (isString(task)) {
       return this.manager.run(task, ...args);
     } else if (isFunction(task)/* || ateos.isClass(task)*/) {

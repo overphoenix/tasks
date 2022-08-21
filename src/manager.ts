@@ -1,4 +1,5 @@
 import {
+  AsyncEventEmitter,
   isArray,
   isBoolean,
   isNumber,
@@ -9,16 +10,19 @@ import {
   isObject,
   isPromise,
   isUndefined,
-  omit
+  omit,
+  promise,
+  throttle,
+  typeOf,
+  NotExistsException,
+  InvalidArgumentException,
+  ExistsException,
+  NotValidException,
+  NotAllowedException
 } from "@recalibratedsystems/common";
 import * as upath from "upath";
 import { stat, readdir } from 'fs/promises';
-import typeOf from "@recalibratedsystems/common/typeof";
 import { identity, noop, truly } from "@recalibratedsystems/common";
-import { AsyncEventEmitter } from "@recalibratedsystems/common/async_event_emitter";
-import { finally as _finally } from "@recalibratedsystems/common/promise";
-import { throttle } from "@recalibratedsystems/common/throttle";
-import { NotExistsException, InvalidArgumentException, ExistsException, NotValidException, NotAllowedException } from "@recalibratedsystems/common/error";
 import { TaskObserver } from "./task_observer";
 import { BaseTask } from "./base_task";
 import { getTaskMeta, MANAGER_SYMBOL, TaskInfo, TaskState } from "./common";
@@ -39,7 +43,7 @@ const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz", 16);
 
 const ANY_NOTIFICATION = Symbol();
 
-const DUMMY_THROTTLE = (tsk) => tsk();
+const DUMMY_THROTTLE = (tsk: any) => tsk();
 
 const getOptionValue = (arg, meta, predicate, def) => predicate(arg)
   ? arg
@@ -129,7 +133,7 @@ export class TaskManager extends AsyncEventEmitter {
       TaskClass = options.task;
     } else if (isFunction(options.task)) {
       TaskClass = class extends BaseTask {
-        main(...args) {
+        main(...args: any[]) {
           return options.task.apply(this, args);
         }
       };
@@ -150,7 +154,7 @@ export class TaskManager extends AsyncEventEmitter {
      * - ignore: ignore tasks of the same name
      * - replace: replace loaded task by newtask with same name
      */
-  async loadTasksFrom(path, options?: LoadFromOptions) {
+  async loadTasksFrom(path: string | string[], options?: LoadFromOptions) {
     let paths;
     if (isString(path)) {
       paths = [path];
@@ -224,7 +228,7 @@ export class TaskManager extends AsyncEventEmitter {
           modExports = modExports.default;
         }
 
-        let tasks;
+        let tasks: any[];
         if (isClass(modExports)) {
           tasks = [modExports];
         } else if (isPlainObject(modExports)) {
@@ -249,7 +253,7 @@ export class TaskManager extends AsyncEventEmitter {
      * 
      * @param {object} name task name
      */
-  getTask(name) {
+  getTask(name: string) {
     return this.getTaskInfo(name);
   }
 
@@ -258,7 +262,7 @@ export class TaskManager extends AsyncEventEmitter {
      * 
      * @param {string} name task name
      */
-  getTaskClass(name) {
+  getTaskClass(name: string) {
     const taskInfo = this.getTaskInfo(name);
     return taskInfo.Class;
   }
@@ -268,7 +272,7 @@ export class TaskManager extends AsyncEventEmitter {
      * 
      * @param {*} name 
      */
-  getTasksByDomain(domain) {
+  getTasksByDomain(domain: string) {
     const tasks = this.domains.get(domain);
     if (isUndefined(tasks)) {
       return [];
@@ -281,7 +285,7 @@ export class TaskManager extends AsyncEventEmitter {
      * 
      * @param {string} name task name
      */
-  getTaskInstance(name) {
+  getTaskInstance(name: string) {
     return this.createTaskInstance(this.getTaskInfo(name));
   }
 
@@ -289,7 +293,7 @@ export class TaskManager extends AsyncEventEmitter {
      * Returns true if task with such name owned by the manager.
      * @param {string} name 
      */
-  hasTask(name) {
+  hasTask(name: string) {
     return this.tasks.has(name);
   }
 
@@ -298,7 +302,7 @@ export class TaskManager extends AsyncEventEmitter {
      * 
      * @param {string} name 
      */
-  deleteTask(name) {
+  deleteTask(name: string) {
     const taskInfo = this.getTaskInfo(name);
     if (taskInfo.runners.size > 0) {
       taskInfo.zombi = true;
@@ -322,7 +326,7 @@ export class TaskManager extends AsyncEventEmitter {
      * Deletes all tasks with domain
      * @param {*} domain 
      */
-  async deleteTasksByDomain(domain) {
+  async deleteTasksByDomain(domain: string) {
     const names = this.getTaskNames(domain);
     for (const name of names) {
       // eslint-disable-next-line no-await-in-loop
@@ -345,9 +349,9 @@ export class TaskManager extends AsyncEventEmitter {
   /**
      * Register notification observer.
      */
-  onNotification(selector, observer) {
+  onNotification(selector: any, observer: any) {
     let name;
-    let filter = truly;
+    let filter: ((t: any) => boolean) = truly;
 
     if (isString(selector)) {
       name = selector;
@@ -374,7 +378,7 @@ export class TaskManager extends AsyncEventEmitter {
         }];
         this.notifications.set(name, observers);
       } else {
-        if (observers.findIndex((info) => info.observer === observer) >= 0) {
+        if (observers.findIndex((info: any) => info.observer === observer) >= 0) {
           throw new ExistsException("Shuch observer already exists");
         }
 
@@ -385,7 +389,7 @@ export class TaskManager extends AsyncEventEmitter {
       }
     } else {
       const anyNotif = this.notifications.get(ANY_NOTIFICATION);
-      if (anyNotif.findIndex((info) => info.observer === observer) >= 0) {
+      if (anyNotif.findIndex((info: any) => info.observer === observer) >= 0) {
         throw new ExistsException("Shuch observer already exists");
       }
       anyNotif.push({
@@ -402,7 +406,7 @@ export class TaskManager extends AsyncEventEmitter {
      * @param {string} name - notification name
      * @param {array} args - notification arguments
      */
-  notify(sender, name, ...args) {
+  notify(sender: any, name: string, ...args: any[]) {
     const observers = this.notifications.get(name);
     if (isArray(observers)) {
       for (const info of observers) {
@@ -426,7 +430,7 @@ export class TaskManager extends AsyncEventEmitter {
      * @param {*} name task name
      * @param {*} args task arguments
      */
-  run(name, ...args) {
+  run(name: string, ...args: any[]) {
     return this.runNormal(name, ...args);
   }
 
@@ -466,7 +470,7 @@ export class TaskManager extends AsyncEventEmitter {
      * @param {*} name task name
      * @param {*} args task arguments
      */
-  async runAndWait(name, ...args) {
+  async runAndWait(name: string, ...args: any[]) {
     const observer = await this.run(name, ...args);
     return observer.result;
   }
@@ -477,7 +481,7 @@ export class TaskManager extends AsyncEventEmitter {
      * @param {class} task 
      * @param {*} args 
      */
-  async runOnce(task, ...args) {
+  async runOnce(task: any, ...args: any[]) {
     let name;
     if (isClass(task) && !this.hasTask(task.name)) {
       name = task.name;
@@ -491,7 +495,7 @@ export class TaskManager extends AsyncEventEmitter {
     return observer;
   }
 
-  private async runNormal(name, ...args) {
+  private async runNormal(name: string, ...args: any[]) {
     const taskInfo = this.getTaskInfo(name);
     let taskObserver;
 
@@ -513,7 +517,7 @@ export class TaskManager extends AsyncEventEmitter {
       };
 
       if (isPromise(taskObserver.result)) {
-        _finally(taskObserver.result, releaseRunner).catch(noop);
+        promise.finally(taskObserver.result, releaseRunner).catch(noop);
       } else {
         releaseRunner();
       }
@@ -522,8 +526,8 @@ export class TaskManager extends AsyncEventEmitter {
     return taskObserver;
   }
 
-  private async createTaskRunner(taskInfo) {
-    return async (args) => {
+  private async createTaskRunner(taskInfo: TaskInfo) {
+    return async (args: any[]) => {
       const instance = await this.createTaskInstance(taskInfo);
 
       const taskObserver = new TaskObserver(instance, taskInfo);
@@ -548,7 +552,7 @@ export class TaskManager extends AsyncEventEmitter {
 
         taskObserver.result.then(() => {
           taskObserver.state = (taskObserver.state === TaskState.CANCELLING) ? TaskState.CANCELLED : TaskState.COMPLETED;
-        }).catch((err) => {
+        }).catch((err: any) => {
           taskObserver.state = TaskState.FAILED;
           taskObserver.error = err;
         });
@@ -559,7 +563,7 @@ export class TaskManager extends AsyncEventEmitter {
     };
   }
 
-  private createTaskInstance(taskInfo) {
+  private createTaskInstance(taskInfo: TaskInfo) {
     let instance;
     if (taskInfo.singleton) {
       if (isUndefined(taskInfo.instance)) {
@@ -614,7 +618,7 @@ export class TaskManager extends AsyncEventEmitter {
     return validatedTaskInfo;
   }
 
-  private installTask(taskInfo) {
+  private installTask(taskInfo: TaskInfo) {
     this.tasks.set(taskInfo.name, taskInfo);
     const { domain } = taskInfo;
     if (isString(domain)) {
@@ -627,13 +631,13 @@ export class TaskManager extends AsyncEventEmitter {
     }
   }
 
-  private uninstallTask(taskInfo) {
+  private uninstallTask(taskInfo: TaskInfo) {
     this.tasks.delete(taskInfo.name);
     const domain = taskInfo.domain;
     if (isString(domain)) {
       const tasks = this.domains.get(domain);
       if (!isUndefined(tasks)) {
-        const index = tasks.findIndex((ti) => taskInfo.name === ti.name);
+        const index = tasks.findIndex((ti: TaskInfo) => taskInfo.name === ti.name);
         if (index >= 0) {
           tasks.splice(index, 1);
         }
@@ -641,7 +645,7 @@ export class TaskManager extends AsyncEventEmitter {
     }
   }
 
-  private getTaskInfo(name): TaskInfo {
+  private getTaskInfo(name: string): TaskInfo {
     const taskInfo = this.tasks.get(name);
     if (!taskInfo || taskInfo.zombi === true) {
       throw new NotExistsException(`Task '${name}' not exists`);
