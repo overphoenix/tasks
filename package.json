@@ -1,6 +1,6 @@
 {
   "name": "@recalibratedsystems/tasks",
-  "version": "0.8.5",
+  "version": "0.8.6",
   "description": "Simple task manager",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -12,6 +12,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/overphoenix/tasks.git"
+  },
+  "engines": {
+    "node": ">=16"
   },
   "author": "ATEOS team",
   "license": "MIT",
