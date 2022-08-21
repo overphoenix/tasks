@@ -1,6 +1,6 @@
 {
   "name": "@recalibratedsystems/tasks",
-  "version": "0.8.7",
+  "version": "0.8.8",
   "description": "Simple task manager",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
@@ -16,6 +16,11 @@
   "engines": {
     "node": ">=16"
   },
+  "keywords": [
+    "tasks",
+    "workflow",
+    "task manager"
+  ],
   "author": "ATEOS team",
   "license": "MIT",
   "bugs": {
