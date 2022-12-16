@@ -1,4 +1,4 @@
-import { noop, isPromise } from "@recalibratedsystems/common";
+import { noop, isPromise } from "@recalibratedsystems/common-cjs";
 import { FlowTask } from "./flow_task";
 import { TaskObserver } from "./task_observer";
 

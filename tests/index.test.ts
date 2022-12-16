@@ -1,5 +1,4 @@
 import "reflect-metadata";
-import { } from "@recalibratedsystems/common";
 import {
   omit,
   isString,
@@ -19,7 +18,7 @@ import {
   NotAllowedException,
   AggregateException,
   ExistsException
-} from "@recalibratedsystems/common";
+} from "@recalibratedsystems/common-cjs";
 import {
   IsomorphicTask,
   BaseTask,

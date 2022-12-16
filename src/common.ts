@@ -1,4 +1,4 @@
-import { isObject, isUndefined } from "@recalibratedsystems/common";
+import { isObject, isUndefined } from "@recalibratedsystems/common-cjs";
 
 export enum TaskState {
   IDLE = 0,

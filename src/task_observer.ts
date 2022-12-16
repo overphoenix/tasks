@@ -4,7 +4,7 @@ import {
   isPromise,
   promise,
   NotAllowedException
-} from "@recalibratedsystems/common";
+} from "@recalibratedsystems/common-cjs";
 import { BaseTask } from "./base_task";
 import { OBSERVER_SYMBOL, TaskInfo, TaskState } from "./common";
 

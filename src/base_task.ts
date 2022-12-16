@@ -1,4 +1,4 @@
-import { ImmutableException, NotImplementedException, NotValidException } from "@recalibratedsystems/common";
+import { ImmutableException, NotImplementedException, NotValidException } from "@recalibratedsystems/common-cjs";
 import { MANAGER_SYMBOL, OBSERVER_SYMBOL } from "./common";
 import { TaskManager } from "./manager";
 import { TaskObserver } from "./task_observer";

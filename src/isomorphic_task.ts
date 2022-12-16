@@ -2,7 +2,7 @@ import {
   typeOf,
   InvalidNumberOfArgumentsException,
   InvalidArgumentException
-} from "@recalibratedsystems/common";
+} from "@recalibratedsystems/common-cjs";
 import { BaseTask } from "./base_task";
 
 const ALLOWED_TYPES = ["Object", "global", "ateos", "undefined", "null"];

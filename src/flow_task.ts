@@ -6,8 +6,7 @@ import {
   isObject,
   typeOf,
   NotValidException, NotAllowedException, NotExistsException
-} from "@recalibratedsystems/common";
-import {  } from "@recalibratedsystems/common";
+} from "@recalibratedsystems/common-cjs";
 import { TaskManager } from "./manager";
 import { IsomorphicTask } from "./isomorphic_task";
 import { TaskObserver } from "./task_observer";
