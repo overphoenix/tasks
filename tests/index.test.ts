@@ -549,7 +549,6 @@ describe("tasks", () => {
 
     describe("allowed arguments", () => {
       const allowed = {
-        global: [global],
         "Object.create(null)": [Object.create(null)],
         "{}": [{}],
         "new BaseTask()": [new BaseTask()],

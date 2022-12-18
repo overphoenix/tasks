@@ -5,13 +5,13 @@ import {
 } from "@recalibratedsystems/common-cjs";
 import { BaseTask } from "./base_task";
 
-const ALLOWED_TYPES = ["Object", "global", "ateos", "undefined", "null"];
+const ALLOWED_TYPES = ["Object", "undefined", "null"];
 
 /**
  * Isomorphic task taskes only one argument as Object instead of many arguments.
  * 
  * In this case, you don’t need to know the task execution signature, which facilitates the interaction between tasks,
- * allows you to load parameters from configuration files or other sources and to use the latest features of the ESNext.
+ * allows you to load parameters from configuration files or other sources.
  */
 export class IsomorphicTask extends BaseTask {
   async _run(...args: any[]) {
