@@ -213,7 +213,7 @@ describe("tasks", () => {
       } else {
         expect(() => taskA[prop.name]).toThrow(NotValidException);
       }
-      
+
       expect(() => taskA[prop.name] = prop.createNew()).toThrow(ImmutableException);
     }
   });
@@ -1001,10 +1001,7 @@ describe("tasks", () => {
           args: "ateos",
           tasks: ["a", "b"]
         });
-        expect(await observer.result).toEqual({
-          a: 1,
-          b: "suffix-ateos"
-        });
+        expect((await observer.result).sort()).toEqual([1, "suffix-ateos"].sort());
       });
 
       it("managed+unmanaged tasks", async () => {
@@ -1016,11 +1013,7 @@ describe("tasks", () => {
           args: "ateos",
           tasks: ["a", "b", TaskC]
         });
-        expect(await observer.result).toEqual({
-          a: 1,
-          b: "suffix-ateos",
-          TaskC: "ateos"
-        });
+        expect((await observer.result).sort()).toEqual([1, "suffix-ateos", "ateos"].sort());
       });
 
       it("run tasks with separate args", async () => {
@@ -1040,10 +1033,7 @@ describe("tasks", () => {
             { task: "b", args: 888 }
           ]
         });
-        expect(await observer.result).toEqual({
-          a: "ateos",
-          b: 888
-        });
+        expect((await observer.result).sort()).toEqual(["ateos", 888].sort());
       });
 
       it("should not stop follow-up tasks is one of the task has thrown", async () => {
@@ -1113,8 +1103,8 @@ describe("tasks", () => {
         await observer.cancel();
 
         const result = await observer.result;
-        expect(isNumber(result.a)).toBeTruthy();
-        expect(isNumber(result.b)).toBeTruthy();
+        expect(result[0]).toBeTruthy();
+        expect(result[1]).toBeTruthy();
 
         await observer.result;
       });
@@ -1154,10 +1144,7 @@ describe("tasks", () => {
         await observer.cancel();
 
         const result = await observer.result;
-        expect(result).toEqual({
-          a: 888,
-          b: 100
-        });
+        expect(result.sort()).toEqual([888, 100].sort());
 
         await observer.result;
       });
