@@ -48,24 +48,22 @@ const normalizeAndCheck = (manager: TaskManager, tasks: any[]) => {
  */
 export class FlowTask extends IsomorphicTask {
   public tasks: any[] = [];
-  private args: any[] = [];
+  private arg: any;
   public observers: TaskObserver[] = [];
 
   _run(...args: any[]) {
     const taskData = this._validateArgs(args);
 
     this.tasks = normalizeAndCheck(this.manager, taskData.tasks);
-    this.args = arrify(taskData.args);
+    this.arg = taskData.arg;
     this.observers = [];
 
-    return this.main(...this.args);
+    return this.main(this.arg);
   }
 
   async _iterate(handler: ((o: TaskObserver) => boolean | Promise<boolean>)) {
     for (const t of this.tasks) {
-      const args = isExist(t.args)
-        ? arrify(t.args)
-        : this.args;
+      const args = Object.assign({}, t.args, this.arg);
       const observer = await this._runTask(t.task, args);
       this.observers.push(observer);
 

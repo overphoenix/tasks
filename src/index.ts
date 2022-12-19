@@ -23,7 +23,7 @@ export {
  * @param {ateos.task.TaskManager} manager
  * @param {array} tasks array of task names
  */
-export const runSeries = (manager: TaskManager, tasks: any[], ...args: any[]) => manager.runOnce(SeriesFlowTask, { args, tasks });
+export const runSeries = (manager: TaskManager, tasks: any[], arg?: any) => manager.runOnce(SeriesFlowTask, { arg, tasks });
 
 /**
  * Runs tasks in parallel.
@@ -31,4 +31,4 @@ export const runSeries = (manager: TaskManager, tasks: any[], ...args: any[]) =>
  * @param {ateos.task.TaskManager} manager
  * @param {array} tasks array of tasks
  */
-export const runParallel = (manager: TaskManager, tasks: any[], ...args: any[]) => manager.runOnce(ParallelFlowTask, { args, tasks });
+export const runParallel = (manager: TaskManager, tasks: any[], arg?: any) => manager.runOnce(ParallelFlowTask, { arg, tasks });
