@@ -11,7 +11,7 @@ export class AdvancedTask extends IsomorphicTask {
       this.result = await this.main(...args);
       await this.uninitialize(...args);
     } catch (err) {
-      await this.error(err);
+      await this.error(err, ...args);
       return;
     }
     return this.result;
@@ -38,7 +38,7 @@ export class AdvancedTask extends IsomorphicTask {
      *
      * @param {Error} err
      */
-  error(err: any) {
+  error(err: any, ...args) {
     throw err;
   }
 }
