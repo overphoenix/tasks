@@ -63,8 +63,7 @@ export class FlowTask extends IsomorphicTask {
 
   async _iterate(handler: ((o: TaskObserver) => boolean | Promise<boolean>)) {
     for (const t of this.tasks) {
-      const args = Object.assign({}, t.args, this.arg);
-      const observer = await this._runTask(t.task, args);
+      const observer = await this._runTask(t.task, Object.assign({}, t.args, this.arg || {}));
       this.observers.push(observer);
 
       if (await handler(observer)) {
@@ -73,11 +72,11 @@ export class FlowTask extends IsomorphicTask {
     }
   }
 
-  _runTask(task: any, args: any[]) {
+  _runTask(task: any, arg: any) {
     if (isString(task)) {
-      return this.manager.run(task, ...args);
+      return this.manager.run(task, arg);
     } else if (isFunction(task)/* || ateos.isClass(task)*/) {
-      return this.manager.runOnce(task, ...args);
+      return this.manager.runOnce(task, arg);
     }
 
     throw new NotAllowedException(`Invalid type of task: ${typeOf(task)}`);

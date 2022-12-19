@@ -798,14 +798,14 @@ describe("tasks", () => {
     }
 
     class TaskB extends BaseTask {
-      async main(suffix) {
+      async main({ suffix }) {
         await promise.delay(10);
         return `suffix-${suffix}`;
       }
     }
 
     class TaskC extends BaseTask {
-      main(suffix) {
+      main({ suffix }) {
         return suffix;
       }
     }
@@ -816,7 +816,9 @@ describe("tasks", () => {
       await manager.addTask({ name: "series", task: SeriesFlowTask });
 
       await expect(async () => manager.runAndWait("series", {
-        args: "ateos",
+        args: {
+          suffix: "ateos"
+        },
         tasks: ["a", "b"]
       }, {})).rejects.toThrow(InvalidNumberOfArgumentsException);
     });
@@ -836,10 +838,12 @@ describe("tasks", () => {
         await manager.addTask({ name: "series", task: SeriesFlowTask });
 
         const observer = await manager.run("series", {
-          args: "ateos",
+          arg: {
+            suffix: "ateos"
+          },
           tasks: ["a", "b"]
         });
-        expect(await observer.result).toEqual([1, "suffix-ateos"]);
+        expect((await observer.result)).toEqual([1, "suffix-ateos"]);
       });
 
       it("managed+unmanaged tasks", async () => {
@@ -848,7 +852,9 @@ describe("tasks", () => {
         await manager.addTask({ name: "series", task: SeriesFlowTask });
 
         const observer = await manager.run("series", {
-          args: "ateos",
+          arg: {
+            suffix: "ateos"
+          },
           tasks: ["a", "b", TaskC]
         });
         expect(await observer.result).toEqual([1, "suffix-ateos", "ateos"]);
@@ -856,7 +862,7 @@ describe("tasks", () => {
 
       it("run tasks with separate args", async () => {
         class SomeTask extends BaseTask {
-          main(val) {
+          main({ val }) {
             return val;
           }
         }
@@ -867,8 +873,16 @@ describe("tasks", () => {
 
         const observer = await manager.run("series", {
           tasks: [
-            { task: "a", args: "ateos" },
-            { task: "b", args: 888 }
+            {
+              task: "a", args: {
+                val: "ateos"
+              }
+            },
+            {
+              task: "b", args: {
+                val: 888
+              }
+            }
           ]
         });
         expect(await observer.result).toEqual(["ateos", 888]);
@@ -998,7 +1012,9 @@ describe("tasks", () => {
         await manager.addTask({ name: "parallel", task: ParallelFlowTask });
 
         const observer = await manager.run("parallel", {
-          args: "ateos",
+          arg: {
+            suffix: "ateos"
+          },
           tasks: ["a", "b"]
         });
         expect((await observer.result).sort()).toEqual([1, "suffix-ateos"].sort());
@@ -1010,7 +1026,9 @@ describe("tasks", () => {
         await manager.addTask({ name: "parallel", task: ParallelFlowTask });
 
         const observer = await manager.run("parallel", {
-          args: "ateos",
+          arg: {
+            suffix: "ateos"
+          },
           tasks: ["a", "b", TaskC]
         });
         expect((await observer.result).sort()).toEqual([1, "suffix-ateos", "ateos"].sort());
@@ -1018,7 +1036,7 @@ describe("tasks", () => {
 
       it("run tasks with separate args", async () => {
         class SomeTask extends BaseTask {
-          main(val) {
+          main({ val }) {
             return val;
           }
         }
@@ -1029,8 +1047,16 @@ describe("tasks", () => {
 
         const observer = await manager.run("parallel", {
           tasks: [
-            { task: "a", args: "ateos" },
-            { task: "b", args: 888 }
+            {
+              task: "a", args: {
+                val: "ateos"
+              }
+            },
+            {
+              task: "b", args: {
+                val: 888
+              }
+            }
           ]
         });
         expect((await observer.result).sort()).toEqual(["ateos", 888].sort());
@@ -1144,7 +1170,7 @@ describe("tasks", () => {
         await observer.cancel();
 
         const result = await observer.result;
-        expect(result.sort()).toEqual([888, 100].sort());
+        expect(result.sort()).toHaveLength(2);
 
         await observer.result;
       });
@@ -1161,7 +1187,9 @@ describe("tasks", () => {
         await manager.addTask({ name: "try", task: TryFlowTask });
 
         const observer = await manager.run("try", {
-          args: "ateos",
+          arg: {
+            suffix: "ateos"
+          },
           tasks: ["badA", "b"]
         });
         expect(await observer.result).toEqual("suffix-ateos");
@@ -1172,7 +1200,9 @@ describe("tasks", () => {
         await manager.addTask({ name: "try", task: TryFlowTask });
 
         const observer = await manager.run("try", {
-          args: "ateos",
+          arg: {
+            suffix: "ateos"
+          },
           tasks: ["badA", TaskC]
         });
         expect(await observer.result).toEqual("ateos");
@@ -1196,13 +1226,16 @@ describe("tasks", () => {
 
     describe("waterfall", () => {
       class TaskD extends BaseTask {
-        async main(num) {
-          return [num, 7];
+        async main({ num }) {
+          return {
+            num1: num,
+            num2: 7
+          };
         }
       }
 
       class TaskE extends BaseTask {
-        async main(num1, num2) {
+        async main({ num1, num2 }) {
           await promise.delay(10);
           return num1 * num2;
         }
@@ -1214,7 +1247,9 @@ describe("tasks", () => {
         await manager.addTask({ name: "waterfall", task: WaterfallFlowTask });
 
         const observer = await manager.run("waterfall", {
-          args: 3,
+          arg: {
+            num: 3
+          },
           tasks: ["d", "e"]
         });
         expect(await observer.result).toEqual(21);
@@ -1232,7 +1267,9 @@ describe("tasks", () => {
         await manager.addTask({ name: "waterfall", task: WaterfallFlowTask });
 
         const observer = await manager.run("waterfall", {
-          args: 3,
+          arg: {
+            num: 3
+          },
           tasks: ["d", "e", TaskF]
         });
         const result = await observer.result;
