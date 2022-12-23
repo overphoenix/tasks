@@ -7,6 +7,8 @@ export class BaseTask {
   [MANAGER_SYMBOL]: TaskManager | null;
   [OBSERVER_SYMBOL]: TaskObserver | null;
 
+  public result: any;
+
   constructor() {
     this[MANAGER_SYMBOL] = null;
     this[OBSERVER_SYMBOL] = null;
@@ -50,8 +52,9 @@ export class BaseTask {
      * 
      * @param  {...any} args 
      */
-  _run(...args: any[]) {
-    return this.main(...args);
+  async _run(...args: any[]) {
+    await this.main(...args);
+    return this.result;
   }
 
   /**

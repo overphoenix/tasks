@@ -2,8 +2,6 @@ import { IsomorphicTask } from "./isomorphic_task";
 
 // TODO: tests
 export class AdvancedTask extends IsomorphicTask {
-  public result: any;
-
   async _run(...args: any[]) {
     this._validateArgs(args);
     try {

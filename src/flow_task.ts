@@ -51,14 +51,15 @@ export class FlowTask extends IsomorphicTask {
   private arg: any;
   public observers: TaskObserver[] = [];
 
-  _run(...args: any[]) {
+  async _run(...args: any[]) {
     const taskData = this._validateArgs(args);
 
     this.tasks = normalizeAndCheck(this.manager, taskData.tasks);
     this.arg = taskData.arg;
     this.observers = [];
 
-    return this.main(this.arg);
+    await this.main(this.arg);
+    return this.result;
   }
 
   async _iterate(handler: ((o: TaskObserver) => boolean | Promise<boolean>)) {

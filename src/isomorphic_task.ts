@@ -15,7 +15,8 @@ const ALLOWED_TYPES = ["Object", "undefined", "null"];
  */
 export class IsomorphicTask extends BaseTask {
   async _run(...args: any[]) {
-    return this.main(this._validateArgs(args));
+    await this.main(this._validateArgs(args));
+    return this.result;
   }
 
   _validateArgs(args: any[]) {

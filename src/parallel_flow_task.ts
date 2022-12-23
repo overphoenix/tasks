@@ -9,8 +9,8 @@ import { TaskObserver } from "./task_observer";
  * Once the tasks have completed, the results are passed as object where keys are names of the tasks and values are results.
  */
 export default class ParallelFlowTask extends FlowTask {
-  async main(): Promise<any[]> {
-    const results: any[] = [];
+  async main(): Promise<void> {
+    this.result = [];
     const promises: Promise<any>[] = [];
     await this._iterate((observer: TaskObserver): boolean => {
       let result = observer.result;
@@ -19,7 +19,7 @@ export default class ParallelFlowTask extends FlowTask {
       }
 
       result.then((result: any) => {
-        results.push(result);
+        this.result.push(result);
       }).catch(noop);
       promises.push(result);
       
@@ -27,8 +27,6 @@ export default class ParallelFlowTask extends FlowTask {
     });
 
     await Promise.all(promises);
-
-    return results;
   }
 
   /**

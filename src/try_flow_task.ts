@@ -8,12 +8,11 @@ import { TaskObserver } from "./task_observer";
  */
 export default class TryFlowTask extends FlowTask {
   async main() {
-    let result;
     const errors: any[] = [];
 
     await this._iterate(async (observer: TaskObserver): Promise<boolean> => {
       try {
-        result = await observer.result;
+        this.result = await observer.result;
         return true;
       } catch (err) {
         errors.push(err);
@@ -25,7 +24,5 @@ export default class TryFlowTask extends FlowTask {
     if (this.tasks.length === errors.length) {
       throw new AggregateException(errors);
     }
-
-    return result;
   }
 }

@@ -109,7 +109,7 @@ describe("tasks", () => {
       if (isNumber(timeout)) {
         await promise.delay(timeout);
       }
-      return value;
+      this.result = value;
     }
   }
 
@@ -152,13 +152,13 @@ describe("tasks", () => {
     const InvalidTask2 = {};
     class InvalidTask3 {
       main() {
-        return "invalid";
+        this.result = "invalid";
       }
     }
 
     class ValidTask extends BaseTask {
       main() {
-        return "ok";
+        this.result = "ok";
       }
     }
 
@@ -310,7 +310,7 @@ describe("tasks", () => {
     class TaskA extends BaseTask {
       async main(version) {
         await promise.delay(10);
-        return `RS ${version}`;
+        this.result = `RS ${version}`;
       }
     }
 
@@ -331,7 +331,7 @@ describe("tasks", () => {
   it("delete existing task", async () => {
     class TaskA extends BaseTask {
       main() {
-        return 0;
+        this.result = 0;
       }
     }
 
@@ -389,7 +389,7 @@ describe("tasks", () => {
     class TaskA extends BaseTask {
       async main(version) {
         await promise.delay(10);
-        return `rs ${version}`;
+        this.result = `rs ${version}`;
       }
     }
 
@@ -404,7 +404,7 @@ describe("tasks", () => {
     class TaskA extends BaseTask {
       async main(version) {
         await promise.delay(100);
-        return `123 ${version}`;
+        this.result = `123 ${version}`;
       }
     }
 
@@ -495,7 +495,7 @@ describe("tasks", () => {
 
     class IsomorphicA extends IsomorphicTask {
       main(data) {
-        return typeOf(data);
+        this.result = typeOf(data);
       }
     }
 
@@ -640,7 +640,7 @@ describe("tasks", () => {
         }
         await promise.delay(timeout);
         inc--;
-        return inc;
+        this.result = inc;
       }
     }
 
@@ -654,7 +654,7 @@ describe("tasks", () => {
         }
         await promise.delay(timeout);
         this.inc--;
-        return this.inc;
+        this.result = this.inc;
       }
     }
 
@@ -786,7 +786,7 @@ describe("tasks", () => {
     class TaskA extends BaseTask {
       async main() {
         await promise.delay(10);
-        return 1;
+        this.result = 1;
       }
     }
 
@@ -800,13 +800,13 @@ describe("tasks", () => {
     class TaskB extends BaseTask {
       async main({ suffix }) {
         await promise.delay(10);
-        return `suffix-${suffix}`;
+        this.result = `suffix-${suffix}`;
       }
     }
 
     class TaskC extends BaseTask {
       main({ suffix }) {
-        return suffix;
+        this.result = suffix;
       }
     }
 
@@ -863,7 +863,7 @@ describe("tasks", () => {
       it("run tasks with separate args", async () => {
         class SomeTask extends BaseTask {
           main({ val }) {
-            return val;
+            this.result =  val;
           }
         }
 
@@ -964,7 +964,7 @@ describe("tasks", () => {
         class TaskA extends BaseTask {
           async main() {
             await promise.delay(1000);
-            return 888;
+            this.result = 888;
           }
         }
 
@@ -1037,7 +1037,7 @@ describe("tasks", () => {
       it("run tasks with separate args", async () => {
         class SomeTask extends BaseTask {
           main({ val }) {
-            return val;
+            this.result = val;
           }
         }
 
@@ -1139,7 +1139,7 @@ describe("tasks", () => {
         class TaskA extends BaseTask {
           async main() {
             await promise.delay(1000);
-            return 888;
+            this.result = 888;
           }
         }
 
@@ -1227,7 +1227,7 @@ describe("tasks", () => {
     describe("waterfall", () => {
       class TaskD extends BaseTask {
         async main({ num }) {
-          return {
+          this.result = {
             num1: num,
             num2: 7
           };
@@ -1237,7 +1237,7 @@ describe("tasks", () => {
       class TaskE extends BaseTask {
         async main({ num1, num2 }) {
           await promise.delay(10);
-          return num1 * num2;
+          this.result = num1 * num2;
         }
       }
 
@@ -1259,7 +1259,7 @@ describe("tasks", () => {
         class TaskF extends BaseTask {
           async main(sum) {
             await promise.delay(10);
-            return `sum = ${sum}`;
+            this.result = `sum = ${sum}`;
           }
         }
         await manager.addTask({ name: "d", task: TaskD });
@@ -1282,14 +1282,14 @@ describe("tasks", () => {
       class TaskD extends BaseTask {
         async main() {
           await promise.delay(500);
-          return 3;
+          this.result = 3;
         }
       }
 
       class TaskE extends BaseTask {
         async main() {
           await promise.delay(300);
-          return 5;
+          this.result = 5;
         }
       }
 
@@ -1308,7 +1308,7 @@ describe("tasks", () => {
         class TaskF extends BaseTask {
           async main() {
             await promise.delay(100);
-            return 7;
+            this.result = 7;
           }
         }
         await manager.addTask({ name: "d", task: TaskD });
@@ -1326,13 +1326,13 @@ describe("tasks", () => {
 
   it("runSeries() with functions", async () => {
 
-    const task1 = async () => {
+    const task1 = async function () {
       await promise.delay(100);
-      return 777;
+      this.result = 777;
     };
 
-    const task2 = () => {
-      return 888;
+    const task2 = function () {
+      this.result = 888;
     };
 
     const observer = await runSeries(manager, [
@@ -1345,13 +1345,13 @@ describe("tasks", () => {
 
   it("runParallel() with functions", async () => {
 
-    const task1 = async () => {
+    const task1 = async function () {
       await promise.delay(100);
-      return 777;
+      this.result = 777;
     };
 
-    const task2 = () => {
-      return 888;
+    const task2 = function () {
+      this.result = 888;
     };
 
     const observer = await runParallel(manager, [
@@ -1614,14 +1614,14 @@ describe("tasks", () => {
     })
     class Task1 extends BaseTask {
       main() {
-        return 8;
+        this.result = 8;
       }
     }
 
     @Task("2")
     class Task2 extends BaseTask {
       main() {
-        return 8;
+        this.result = 8;
       }
     }
 
@@ -1636,7 +1636,7 @@ describe("tasks", () => {
     })
     class Task3 extends BaseTask {
       main() {
-        return 8;
+        this.result = 8;
       }
     }
 

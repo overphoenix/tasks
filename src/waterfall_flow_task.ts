@@ -8,13 +8,11 @@ import { FlowTask } from "./flow_task";
  */
 export class WaterfallFlowTask extends FlowTask {
   async main(arg: any) {
-    let result = arg;
+    this.result = arg;
 
     for (const t of this.tasks) {
-      const observer = await this._runTask(t.task, result);
-      result = await observer.result;
+      const observer = await this._runTask(t.task, this.result);
+      this.result = await observer.result;
     }
-
-    return result;
   }
 }

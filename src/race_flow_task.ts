@@ -14,6 +14,6 @@ export default class RaceFlowTask extends FlowTask {
       return false;
     });
 
-    return Promise.race(promises);
+    this.result = Promise.race(promises);
   }
 }

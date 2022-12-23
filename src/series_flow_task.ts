@@ -11,19 +11,17 @@ export default class SeriesFlowTask extends FlowTask {
   private activeObserver?: TaskObserver;
 
   async main() {
-    const results: any[] = [];
+    this.result = [];
     this.shouldStop = false;
 
     await this._iterate(async (observer: TaskObserver): Promise<boolean> => {
       if (!this.shouldStop) {
         this.activeObserver = observer;
-        results.push(await observer.result);
+        this.result.push(await observer.result);
       }
 
       return false;
     });
-
-    return results;
   }
 
   cancel(defer: any) {
