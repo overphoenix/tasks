@@ -8,7 +8,7 @@ export class AdvancedTask extends IsomorphicTask {
     this._validateArgs(args);
     try {
       await this.initialize(...args);
-      this.result = await this.main(...args);
+      await this.main(...args);
       await this.uninitialize(...args);
     } catch (err) {
       await this.error(err, ...args);

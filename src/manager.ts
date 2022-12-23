@@ -47,7 +47,7 @@ const ANY_NOTIFICATION = Symbol();
 
 const DUMMY_THROTTLE = (tsk: any) => tsk();
 
-const getOptionValue = (arg, meta, predicate, def) => predicate(arg)
+const getOptionValue = (arg: any, meta: any, predicate: (key: any) => boolean, def: any) => predicate(arg)
   ? arg
   : predicate(meta)
     ? meta
@@ -144,7 +144,7 @@ export class TaskManager extends AsyncEventEmitter {
     }
 
     taskInfo.Class = TaskClass;
-    return this.installTask(taskInfo);
+    return this.installTask(taskInfo as TaskInfo);
   }
 
   /**
@@ -166,7 +166,7 @@ export class TaskManager extends AsyncEventEmitter {
       throw new InvalidArgumentException(`Invalid 'path' argument: ${typeOf(path)}`);
     }
 
-    for (const p of paths) {
+    for (const p of paths as string[]) {
       let st;
       try {
         // Check for existing
@@ -182,7 +182,7 @@ export class TaskManager extends AsyncEventEmitter {
         files = [p];
       }
 
-      for (const f of files) {
+      for (const f of files as string[]) {
         if (!SUPPORTED_EXTS.includes(upath.extname(f))) {
           continue;
         }
@@ -546,7 +546,7 @@ export class TaskManager extends AsyncEventEmitter {
       if (isPromise(taskObserver.result)) {
         // Wrap promise if task has undo method.
         if (isFunction(taskObserver.task.undo)) {
-          taskObserver.result = taskObserver.result.then(identity, async (err) => {
+          taskObserver.result = taskObserver.result.then(identity, async (err: any) => {
             await taskObserver.task.undo(err);
             throw err;
           });
