@@ -11,6 +11,12 @@ export enum TaskState {
   COMPLETED = 7
 }
 
+export enum TaskLoadPolicy {
+  THROW = "throw",
+  IGNORE = "ignore",
+  REPLACE = "replace"
+}
+
 export type TaskRunner = (...args: any[]) => any;
 
 export interface TaskInfo {

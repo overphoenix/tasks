@@ -27,7 +27,7 @@ import * as upath from "upath";
 import { stat, readdir } from 'fs/promises';
 import { TaskObserver } from "./task_observer";
 import { BaseTask } from "./base_task";
-import { getTaskMeta, MANAGER_SYMBOL, TaskInfo, TaskState } from "./common";
+import { getTaskMeta, MANAGER_SYMBOL, TaskInfo, TaskState, TaskLoadPolicy } from "./common";
 import { customAlphabet } from "nanoid";
 import { isTask } from "./predicates";
 import { isRegExp } from "util/types";
@@ -62,7 +62,7 @@ const getOptionValue = (arg: any, meta: any, predicate: (key: any) => boolean, d
  * To implement more advanced manager you should inherit this class.
  */
 export class TaskManager extends AsyncEventEmitter {
-  static DEFAULT_LOAD_POLICY = "throw";
+  static DEFAULT_LOAD_POLICY = TaskLoadPolicy.THROW;
 
   private tasks = new Map<string, TaskInfo>();
 
@@ -115,20 +115,20 @@ export class TaskManager extends AsyncEventEmitter {
 
     const hasTask = this.tasks.has(name);
 
-    if (options.loadPolicy === "throw") {
+    if (options.loadPolicy === TaskLoadPolicy.THROW) {
       if (hasTask) {
         throw new ExistsException(`Task '${name}' already exists`);
       }
-    } else if (options.loadPolicy === "ignore") {
+    } else if (options.loadPolicy === TaskLoadPolicy.IGNORE) {
       if (hasTask) {
         return false;
       }
-    } else if (options.loadPolicy === "replace") {
+    } else if (options.loadPolicy === TaskLoadPolicy.REPLACE) {
       // Nothing to do...
       // But, in this case we need check previous task state and if task is busy we should wait for it completion.
     }
 
-    const taskInfo = this.initTaskInfo(options.task, name, options);
+    const taskInfo = this._initTaskInfo(options.task, name, options);
 
     let TaskClass;
     if (isClass(options.task)) {
@@ -144,7 +144,7 @@ export class TaskManager extends AsyncEventEmitter {
     }
 
     taskInfo.Class = TaskClass;
-    return this.installTask(taskInfo as TaskInfo);
+    return this._installTask(taskInfo as TaskInfo);
   }
 
   /**
@@ -256,7 +256,7 @@ export class TaskManager extends AsyncEventEmitter {
      * @param {object} name task name
      */
   getTask(name: string) {
-    return this.getTaskInfo(name);
+    return this._getTaskInfo(name);
   }
 
   /**
@@ -265,7 +265,7 @@ export class TaskManager extends AsyncEventEmitter {
      * @param {string} name task name
      */
   getTaskClass(name: string) {
-    const taskInfo = this.getTaskInfo(name);
+    const taskInfo = this._getTaskInfo(name);
     return taskInfo.Class;
   }
 
@@ -288,7 +288,7 @@ export class TaskManager extends AsyncEventEmitter {
      * @param {string} name task name
      */
   getTaskInstance(name: string) {
-    return this.createTaskInstance(this.getTaskInfo(name));
+    return this._createTaskInstance(this._getTaskInfo(name));
   }
 
   /**
@@ -305,11 +305,11 @@ export class TaskManager extends AsyncEventEmitter {
      * @param {string} name 
      */
   deleteTask(name: string) {
-    const taskInfo = this.getTaskInfo(name);
+    const taskInfo = this._getTaskInfo(name);
     if (taskInfo.runners.size > 0) {
       taskInfo.zombi = true;
     } else {
-      return this.uninstallTask(taskInfo);
+      return this._uninstallTask(taskInfo);
     }
   }
 
@@ -432,7 +432,7 @@ export class TaskManager extends AsyncEventEmitter {
      * @param {*} name task name
      * @param {*} args task arguments
      */
-  run(name: string, ...args: any[]) {
+  run(name: string, ...args: any[]): Promise<TaskObserver> {
     return this.runNormal(name, ...args);
   }
 
@@ -471,8 +471,9 @@ export class TaskManager extends AsyncEventEmitter {
      * 
      * @param {*} name task name
      * @param {*} args task arguments
+     * @returns {any}
      */
-  async runAndWait(name: string, ...args: any[]) {
+  async runAndWait(name: string, ...args: any[]): Promise<any> {
     const observer = await this.run(name, ...args);
     return observer.result;
   }
@@ -483,7 +484,7 @@ export class TaskManager extends AsyncEventEmitter {
      * @param {class} task 
      * @param {*} args 
      */
-  async runOnce(task: any, ...args: any[]) {
+  async runOnce(task: any, ...args: any[]): Promise<TaskObserver> {
     let name;
     if (isClass(task) && !this.hasTask(task.name)) {
       name = task.name;
@@ -497,24 +498,24 @@ export class TaskManager extends AsyncEventEmitter {
     return observer;
   }
 
-  private async runNormal(name: string, ...args: any[]) {
-    const taskInfo = this.getTaskInfo(name);
+  private async runNormal(name: string, ...args: any[]): Promise<TaskObserver> {
+    const taskInfo = this._getTaskInfo(name);
     let taskObserver;
 
     if (taskInfo.singleton) {
       if (taskInfo.runner === noop) {
-        taskInfo.runner = await this.createTaskRunner(taskInfo);
+        taskInfo.runner = await this._createTaskRunner(taskInfo);
       }
       taskObserver = await taskInfo.runner(args);
     } else {
-      const runTask = await this.createTaskRunner(taskInfo);
+      const runTask = await this._createTaskRunner(taskInfo);
       taskInfo.runners.add(runTask);
       taskObserver = await runTask(args);
 
       const releaseRunner = () => {
         taskInfo.runners.delete(runTask);
         if (taskInfo.zombi === true && taskInfo.runners.size === 0) {
-          this.uninstallTask(taskInfo);
+          this._uninstallTask(taskInfo);
         }
       };
 
@@ -528,9 +529,9 @@ export class TaskManager extends AsyncEventEmitter {
     return taskObserver;
   }
 
-  private async createTaskRunner(taskInfo: TaskInfo) {
+  private async _createTaskRunner(taskInfo: TaskInfo) {
     return async (args: any[]) => {
-      const instance = await this.createTaskInstance(taskInfo);
+      const instance = await this._createTaskInstance(taskInfo);
 
       const taskObserver = new TaskObserver(instance, taskInfo);
       taskObserver.state = TaskState.RUNNING;
@@ -565,7 +566,7 @@ export class TaskManager extends AsyncEventEmitter {
     };
   }
 
-  private createTaskInstance(taskInfo: TaskInfo) {
+  private _createTaskInstance(taskInfo: TaskInfo) {
     let instance;
     if (taskInfo.singleton) {
       if (isUndefined(taskInfo.instance)) {
@@ -582,7 +583,7 @@ export class TaskManager extends AsyncEventEmitter {
     return instance;
   }
 
-  private initTaskInfo(task: any, name: string, taskInfo: Partial<TaskInfo>): Partial<TaskInfo> {
+  private _initTaskInfo(task: any, name: string, taskInfo: Partial<TaskInfo>): Partial<TaskInfo> {
     if (taskInfo.suspendable && taskInfo.singleton) {
       throw new NotAllowedException("Singleton task cannot be suspendable");
     }
@@ -620,7 +621,7 @@ export class TaskManager extends AsyncEventEmitter {
     return validatedTaskInfo;
   }
 
-  private installTask(taskInfo: TaskInfo) {
+  private _installTask(taskInfo: TaskInfo) {
     this.tasks.set(taskInfo.name, taskInfo);
     const { domain } = taskInfo;
     if (isString(domain)) {
@@ -633,7 +634,7 @@ export class TaskManager extends AsyncEventEmitter {
     }
   }
 
-  private uninstallTask(taskInfo: TaskInfo) {
+  private _uninstallTask(taskInfo: TaskInfo) {
     this.tasks.delete(taskInfo.name);
     const domain = taskInfo.domain;
     if (isString(domain)) {
@@ -647,7 +648,7 @@ export class TaskManager extends AsyncEventEmitter {
     }
   }
 
-  private getTaskInfo(name: string): TaskInfo {
+  private _getTaskInfo(name: string): TaskInfo {
     const taskInfo = this.tasks.get(name);
     if (!taskInfo || taskInfo.zombi === true) {
       throw new NotExistsException(`Task '${name}' not exists`);
