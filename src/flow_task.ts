@@ -1,5 +1,4 @@
 import {
-  arrify,
   isExist,
   isFunction,
   isString,
